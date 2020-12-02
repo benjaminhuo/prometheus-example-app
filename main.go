@@ -23,11 +23,24 @@ var (
 		Name: "myapp_processed_ops_total",
 		Help: "The total number of processed events",
 	})
+
+	httpRequest = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "http_requests_total",
+		Help: "The total number of http request",
+	})
 )
 
-func main() {
-	recordMetrics()
+func serveRequest() {
+	http.HandleFunc("/apps", func(w http.ResponseWriter, r *http.Request) {
+		httpRequest.Inc()
+		w.WriteHeader(http.StatusOK)
+	})
+	http.ListenAndServe(":8080", nil)
+}
 
+func main() {
+	go serveRequest()
+	recordMetrics()
 	http.Handle("/metrics", promhttp.Handler())
 	http.ListenAndServe(":2112", nil)
 }
